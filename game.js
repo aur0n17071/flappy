@@ -2,22 +2,22 @@ var game;
 var gameOptions = {
 
     // bird gravity, will make bird fall if you don't flap
-    birdGravity: 800,
+    birdGravity: 1100,
 
     // horizontal bird speed
-    birdSpeed: 125,
+    birdSpeed: 230,
 
     // flap thrust
-    birdFlapPower: 300,
+    birdFlapPower: 500,
 
     // minimum pipe height, in pixels. Affects hole position
-    minPipeHeight: 50,
+    minPipeHeight: 150,
 
     // distance range from next pipe, in pixels
-    pipeDistance: [220, 280],
+    pipeDistance: [320, 480],
 
     // hole range between pipes, in pixels
-    pipeHole: [100, 130],
+    pipeHole: [200, 260],
 
     // local storage object name
     localStorageName: 'bestFlappyScore'
@@ -30,8 +30,8 @@ window.onload = function() {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
             parent: 'thegame',
-            width: 320,
-            height: 480
+            width: 640,
+            height: 960
         },
         pixelArt: true,
         physics: {
@@ -52,21 +52,27 @@ class playGame extends Phaser.Scene{
         super('PlayGame');
     }
     preload(){
-        // this.load.image('bird', 'bird.png');
         this.load.image('bg', 'bg.png');
         this.load.spritesheet('bird', 
-        'bird.png',
-        { frameWidth: 48, frameHeight: 36 }
+        'bird.svg',
+        { frameWidth: 96, frameHeight: 64 }
         );
         this.load.image('pipe', 'pipe.png');
+        this.load.audio('bgMusic', ['godTheme.mp3']);
     }
     create(){
-        this.add.image(160, 240, 'bg');
+        this.bgMusic = this.sound.add("bgMusic");
+        var musicConfig = {
+            volume: 0.15,
+            loop: true
+        }
+        this.bgMusic.play(musicConfig);
+        this.add.image(320, 480, 'bg');
         this.pipeGroup = this.physics.add.group();
         this.pipePool = [];
         for(let i = 0; i < 4; i++){
-            this.pipePool.push(this.pipeGroup.create(0, 0, 'pipe'));
-            this.pipePool.push(this.pipeGroup.create(0, 0, 'pipe'));
+            this.pipePool.push(this.pipeGroup.create(0, 0, 'pipe').setScale(2));
+            this.pipePool.push(this.pipeGroup.create(0, 0, 'pipe').setScale(2));
             this.placePipes(false);
         }
         this.pipeGroup.setVelocityX(-gameOptions.birdSpeed);
@@ -75,21 +81,14 @@ class playGame extends Phaser.Scene{
 
         this.anims.create({
             key: 'top',
-            frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 1 }),
-            frameRate: 10,
-            repeat: 0
-        });
-        this.anims.create({
-            key: 'dead',
-            frames: this.anims.generateFrameNumbers('bird', { frame: 2 }),
-            frameRate: 10,
-            repeat: 0
+            frames: this.anims.generateFrameNumbers('bird', {start: 0, end:9}),
+            frameRate: 20,
         });
 
         this.input.on('pointerdown', this.flap, this);
         this.score = 0;
         this.topScore = localStorage.getItem(gameOptions.localStorageName) == null ? 0 : localStorage.getItem(gameOptions.localStorageName);
-        this.scoreText = this.add.text(10, 10, '');
+        this.scoreText = this.add.text(10, 10, '',{color: '#000000', fontSize: 32, fontFamily: 'Georgia, "Goudy Bookletter 1911", Times, serif'});
         this.updateScore(this.score);
 
     }
@@ -102,10 +101,10 @@ class playGame extends Phaser.Scene{
         let pipeHoleHeight = Phaser.Math.Between(gameOptions.pipeHole[0], gameOptions.pipeHole[1]);
         let pipeHolePosition = Phaser.Math.Between(gameOptions.minPipeHeight + pipeHoleHeight / 2, game.config.height - gameOptions.minPipeHeight - pipeHoleHeight / 2);
         this.pipePool[0].x = rightmost + this.pipePool[0].getBounds().width + Phaser.Math.Between(gameOptions.pipeDistance[0], gameOptions.pipeDistance[1]);
-        this.pipePool[0].y = pipeHolePosition - pipeHoleHeight / 2;
+        this.pipePool[0].y = pipeHolePosition - pipeHoleHeight / Number((Math.random() * 0.5) + 1.3).toFixed(1);
         this.pipePool[0].setOrigin(0, 1);
         this.pipePool[1].x = this.pipePool[0].x;
-        this.pipePool[1].y = pipeHolePosition + pipeHoleHeight / 2;
+        this.pipePool[1].y = pipeHolePosition + pipeHoleHeight / Number((Math.random() * 0.5) + 1.3).toFixed(1);
         this.pipePool[1].setOrigin(0, 0);
         this.pipePool = [];
         if(addScore){
@@ -115,7 +114,6 @@ class playGame extends Phaser.Scene{
     flap(){
         this.bird.body.velocity.y = -gameOptions.birdFlapPower;
         this.bird.anims.play('top', true);
-
     }
     getRightmostPipe(){
         let rightmostPipe = 0;
@@ -126,7 +124,6 @@ class playGame extends Phaser.Scene{
     }
     update(){
         this.physics.world.collide(this.bird, this.pipeGroup, function(){
-            this.bird.anims.play('dead', true);
             this.die();
         }, null, this);
         if(this.bird.y > game.config.height || this.bird.y < 0){
@@ -140,10 +137,15 @@ class playGame extends Phaser.Scene{
                 }
             }
         }, this)
-
     }
     die(){
         localStorage.setItem(gameOptions.localStorageName, Math.max(this.score, this.topScore));
-        this.scene.start('PlayGame');
+        this.bird.setTint(0xff0000);
+        this.bgMusic.stop();
+        this.scene.pause('PlayGame', this.bird);
+        setTimeout(() => {
+            this.scene.start('PlayGame');
+        }, 200);
+        
     }
 }
