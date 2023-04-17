@@ -1,22 +1,10 @@
 var game;
 var gameOptions = {
-
-    // bird gravity, will make bird fall if you don't flap
     birdGravity: 1100,
-
-    // horizontal bird speed
     birdSpeed: 230,
-
-    // flap thrust
     birdFlapPower: 500,
-
-    // minimum pipe height, in pixels. Affects hole position
     minPipeHeight: 150,
-
-    // distance range from next pipe, in pixels
     pipeDistance: [320, 480],
-
-    // hole range between pipes, in pixels
     pipeHole: [200, 260],
 
     // local storage object name
